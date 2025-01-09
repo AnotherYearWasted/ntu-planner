@@ -1,12 +1,9 @@
 package com.example.app.api;
 
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
 
-import com.example.app.exceptions.APIException;
-
-public class APIService<T> {
+public class APIService {
 
     private final String baseUrl;
     private final WebClient webClient;
@@ -15,26 +12,19 @@ public class APIService<T> {
     public APIService(String baseUrl) {
         this.baseUrl = baseUrl;
         this.webClient = WebClient.builder()
-                                  .baseUrl(baseUrl)
-                                  .build();
+                .baseUrl(baseUrl)
+                .exchangeStrategies(ExchangeStrategies.builder()
+                        .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10 MB
+                        .build())
+                .build();
     }
 
     public String getBaseUrl() {
         return baseUrl;
     }
 
-    public Mono<T> callApi(String endpoint, Class<T> responseType) throws APIException {
-        return webClient.get()
-                        .uri(baseUrl + endpoint)
-                        .retrieve()
-                        .bodyToMono(responseType)
-                        .onErrorResume(WebClientResponseException.class, ex -> {
-                            // Handle 404 errors gracefully
-                            if (ex.getStatusCode().value() == 404) {
-                                return Mono.empty();
-                            }
-                            // Wrap other exceptions into a custom APIException
-                            return Mono.error(new APIException("Error calling API: " + ex.getMessage(), ex));
-                        });
+    public WebClient getWebClient() {
+        return webClient;
     }
+
 }

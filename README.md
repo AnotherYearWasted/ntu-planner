@@ -1,5 +1,10 @@
-# Core Spring and Spring Boot Lab Projects
+# NTU Planner
 
-Labs for the Core Spring and Spring Boot courses
+Plan NTU timetable with ease.
 
-To import these labs into your IDE, import the parent pom `lab/pom.xml` as Maven projects or `lab/build.gradle` as Gradle projects.
+TODO:
+
+- [x] Integrate API with Backend
+- [x] Implement UI
+- [x] Write README
+- [x] Write Javadoc
