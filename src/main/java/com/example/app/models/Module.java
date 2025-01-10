@@ -1,6 +1,8 @@
 package com.example.app.models;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 public class Module {
     private final Long id;
@@ -9,10 +11,13 @@ public class Module {
     private String moduleType;
     private String moduleCode;
     private Float credits;
-    private HashSet<String> prerequisites;
+    private List<String> prerequisites;
+    private List<ClassModule> schedules;
 
     public Module() {
         this.id = null;
+        this.prerequisites = new ArrayList<>();
+        this.schedules = new ArrayList<>();
     }
 
     public Module(ModuleBuilder builder) {
@@ -23,6 +28,7 @@ public class Module {
         this.moduleCode = builder.moduleCode;
         this.credits = builder.credits;
         this.prerequisites = builder.prerequisites;
+        this.schedules = builder.schedules;
     }
 
     public Long getId() {
@@ -49,8 +55,12 @@ public class Module {
         return credits;
     }
 
-    public HashSet<String> getPrerequisites() {
+    public List<String> getPrerequisites() {
         return prerequisites;
+    }
+
+    public List<ClassModule> getSchedules() {
+        return schedules;
     }
 
     public Module setName(String name) {
@@ -78,14 +88,14 @@ public class Module {
         return this;
     }
 
-    public Module setPrerequisites(HashSet<String> prerequisites) {
+    public Module setPrerequisites(List<String> prerequisites) {
         this.prerequisites = prerequisites;
         return this;
     }
 
     public Module addPrerequisite(String prerequisite) {
         if (prerequisites == null) {
-            prerequisites = new HashSet<>();
+            prerequisites = new ArrayList<>();
         }
         prerequisites.add(prerequisite);
         return this;
@@ -94,6 +104,27 @@ public class Module {
     public Module removePrerequisite(String prerequisite) {
         if (prerequisites != null) {
             prerequisites.remove(prerequisite);
+        }
+        return this;
+    }
+
+
+    public Module setSchedules(List<ClassModule> schedules) {
+        this.schedules = schedules;
+        return this;
+    }
+
+    public Module addSchedule(ClassModule classModule) {
+        if (schedules == null) {
+            schedules = new ArrayList<>();
+        }
+        schedules.add(classModule);
+        return this;
+    }
+
+    public Module removeSchedule(ClassModule classModule) {
+        if (schedules != null) {
+            schedules.remove(classModule);
         }
         return this;
     }
@@ -109,7 +140,8 @@ public class Module {
         private String moduleType;
         private String moduleCode;
         private Float credits;
-        private HashSet<String> prerequisites;
+        private List<String> prerequisites;
+        private List<ClassModule> schedules;
 
         public ModuleBuilder setId(Long id) {
             this.id = id;
@@ -141,16 +173,43 @@ public class Module {
             return this;
         }
 
-        public ModuleBuilder setPrerequisites(HashSet<String> prerequisites) {
+        public ModuleBuilder setPrerequisites(List<String> prerequisites) {
             this.prerequisites = prerequisites;
             return this;
         }
 
         public ModuleBuilder addPrerequisite(String prerequisite) {
             if (prerequisites == null) {
-                prerequisites = new HashSet<>();
+                prerequisites = new ArrayList<>();
             }
             prerequisites.add(prerequisite);
+            return this;
+        }
+
+        public ModuleBuilder removePrerequisite(String prerequisite) {
+            if (prerequisites != null) {
+                prerequisites.remove(prerequisite);
+            }
+            return this;
+        }
+
+        public ModuleBuilder setSchedules(List<ClassModule> schedules) {
+            this.schedules = schedules;
+            return this;
+        }
+
+        public ModuleBuilder addSchedule(ClassModule classModule) {
+            if (schedules == null) {
+                schedules = new ArrayList<>();
+            }
+            schedules.add(classModule);
+            return this;
+        }
+
+        public ModuleBuilder removeSchedule(ClassModule classModule) {
+            if (schedules != null) {
+                schedules.remove(classModule);
+            }
             return this;
         }
 

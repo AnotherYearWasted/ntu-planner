@@ -37,7 +37,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Common classes: Percentage, MonetaryAmount -->
+        <!-- Common schedules: Percentage, MonetaryAmount -->
         <dependency>
             <groupId>io.spring.training.core-spring</groupId>
             <artifactId>00-rewards-common</artifactId>

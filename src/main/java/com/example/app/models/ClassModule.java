@@ -1,42 +1,42 @@
 package com.example.app.models;
 
-import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ClassModule {
-
     public enum ClassType {
         LECTURE,
         TUTORIAL,
         LAB,
-        SEMINAR
+        SEMINAR,
+        UNKNOWN
     }
 
     private Long index;
+    @JsonIgnore
     private Module module;
-    private Long startHour;
-    private Long endHour;
+    private Session session;
     private ClassType classType;
     private String venue;
     private String group;
+    private String remark;
 
     public ClassModule() {
+        this.session = new Session();
     }
 
     private ClassModule(ClassBuilder builder) {
         this.index = builder.index;
-        this.startHour = builder.startHour;
-        this.endHour = builder.endHour;
+        this.module = builder.module;
+        this.session = builder.session;
         this.classType = builder.classType;
         this.venue = builder.venue;
         this.group = builder.group;
+        this.remark = builder.remark;
     }
 
-    public Long getStartHour() {
-        return startHour;
-    }
-
-    public Long getEndHour() {
-        return endHour;
+    public Session getSession() {
+        return session;
     }
 
     public ClassType getClassType() {
@@ -55,16 +55,21 @@ public class ClassModule {
         return index;
     }
 
+    public Module getModule() {
+        return module;
+    }
+
+    public String getRemark() {
+        return remark;
+    }
+
     public void setIndex(Long index) {
         this.index = index;
     }
 
-    public void setStartHour(Long startHour) {
-        this.startHour = startHour;
-    }
 
-    public void setEndHour(Long endHour) {
-        this.endHour = endHour;
+    public void setSession(Session session) {
+        this.session = session;
     }
 
     public void setClassType(ClassType classType) {
@@ -79,30 +84,29 @@ public class ClassModule {
         this.group = group;
     }
 
+    public void setModule(Module module) {
+        this.module = module;
+    }
+
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+
     public static ClassBuilder builder() {
         return new ClassBuilder();
     }
 
     public static class ClassBuilder {
         private Long index;
-        private Long startHour;
-        private Long endHour;
+        private Module module;
+        private Session session;
         private ClassType classType;
         private String venue;
         private String group;
+        private String remark;
 
         public ClassBuilder setIndex(Long index) {
             this.index = index;
-            return this;
-        }
-
-        public ClassBuilder setStartHour(Long startHour) {
-            this.startHour = startHour;
-            return this;
-        }
-
-        public ClassBuilder setEndHour(Long endHour) {
-            this.endHour = endHour;
             return this;
         }
 
@@ -118,6 +122,21 @@ public class ClassModule {
 
         public ClassBuilder setGroup(String group) {
             this.group = group;
+            return this;
+        }
+
+        public ClassBuilder setModule(Module module) {
+            this.module = module;
+            return this;
+        }
+
+        public ClassBuilder setSession(Session session) {
+            this.session = session;
+            return this;
+        }
+
+        public ClassBuilder setRemark(String remark) {
+            this.remark = remark;
             return this;
         }
 

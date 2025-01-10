@@ -17,7 +17,7 @@
         <start-class>accounts.AccountsApplication</start-class>
     </properties>
     <dependencies>
-        <!-- This dependency bring in the common classes -->
+        <!-- This dependency bring in the common schedules -->
         <!-- such as Percentage, MonetaryAmount         -->
         <dependency>
             <groupId>io.spring.training.core-spring</groupId>
