@@ -17,7 +17,7 @@
         <start-class>accounts.BootTestSolutionApplication</start-class>
     </properties>
     <dependencies>
-        <!-- Common classes: Percentage, MonetaryAmount -->
+        <!-- Common schedules: Percentage, MonetaryAmount -->
         <dependency>
             <groupId>io.spring.training.core-spring</groupId>
             <artifactId>00-rewards-common</artifactId>

@@ -45,7 +45,7 @@
             <artifactId>hsqldb</artifactId>
         </dependency>
 
-        <!-- Common convenience classes - DO NOT MODIFY -->
+        <!-- Common convenience schedules - DO NOT MODIFY -->
         <dependency>
             <groupId>io.spring.training.core-spring</groupId>
             <artifactId>00-rewards-common</artifactId>

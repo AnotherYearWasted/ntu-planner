@@ -2,6 +2,7 @@ package com.example.app;
 
 import com.example.app.api.ScheduleAPIService;
 import com.example.app.exceptions.APIException;
+import com.example.app.models.Module;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -16,18 +17,18 @@ public class ScheduleAPIServiceTest {
 
     @Test
     void getSchedule() throws APIException {
-        System.out.println("ScheduleAPIServiceTest.getSchedule");
+        System.out.println("ScheduleAPIServiceTest.getSchedules");
 
-        List<Map<String, Object>> result = scheduleAPIService.getSchedule().block();
+        List<Module> result = scheduleAPIService.getSchedule().block();
     }
 
     @Test
     void shouldSaveScheduleToFile() throws APIException {
 
-        List<Map<String, Object>> result = scheduleAPIService.getSchedule().block();
+        List<Module> result = scheduleAPIService.getSchedule().block();
 
         System.out.println("Saving to file...");
-        scheduleAPIService.saveToJsonFile(result).block();
+        scheduleAPIService.saveToJsonFile(result,"./courses_data.json").block();
 
         // Check if file exists
         System.out.println("Checking if file exists...");
