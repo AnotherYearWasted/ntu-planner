@@ -1,6 +1,5 @@
 package com.example.app.models;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class ClassModule {

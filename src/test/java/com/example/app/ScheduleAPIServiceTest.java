@@ -35,6 +35,5 @@ public class ScheduleAPIServiceTest {
         System.out.println("File exists?: " + Files.exists(Paths.get("courses_data.json")));
         assert(Files.exists(Paths.get("courses_data.json")));
 
-
     }
 }
