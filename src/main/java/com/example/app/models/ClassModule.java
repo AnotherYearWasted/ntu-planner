@@ -1,6 +1,8 @@
 package com.example.app.models;
 
-public class Class extends Module {
+import org.springframework.data.mongodb.core.aggregation.ArithmeticOperators;
+
+public class ClassModule {
 
     public enum ClassType {
         LECTURE,
@@ -10,16 +12,17 @@ public class Class extends Module {
     }
 
     private Long index;
+    private Module module;
     private Long startHour;
     private Long endHour;
     private ClassType classType;
     private String venue;
     private String group;
 
-    public Class() {
+    public ClassModule() {
     }
 
-    public Class(ClassBuilder builder) {
+    private ClassModule(ClassBuilder builder) {
         this.index = builder.index;
         this.startHour = builder.startHour;
         this.endHour = builder.endHour;
@@ -80,7 +83,7 @@ public class Class extends Module {
         return new ClassBuilder();
     }
 
-    public static class ClassBuilder extends ModuleBuilder {
+    public static class ClassBuilder {
         private Long index;
         private Long startHour;
         private Long endHour;
@@ -118,8 +121,8 @@ public class Class extends Module {
             return this;
         }
 
-        public Class build() {
-            return new Class(this);
+        public ClassModule build() {
+            return new ClassModule(this);
         }
     }
 

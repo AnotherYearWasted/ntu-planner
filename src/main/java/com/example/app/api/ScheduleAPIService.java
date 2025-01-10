@@ -1,6 +1,8 @@
 package com.example.app.api;
 
 import com.example.app.exceptions.APIException;
+import com.example.app.models.ClassModule;
+import com.example.app.models.Module;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -25,20 +27,19 @@ public class ScheduleAPIService extends APIService {
         super(url);
     }
 
-    public Mono<List<Map<String, Object>>> getSchedule() {
+    public Mono<List<Map<String, Object>>> getSchedule() throws APIException {
         String formData = "acadsem=2024;2&boption=CLoad&staff_access=false&r_search_type=F&acadsem=2023;2&r_course_yr=CSC;;1;F";
         System.out.println("Getting schedule data...");
-        return this.getWebClient().post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromValue(formData))
-                .retrieve()
-                .bodyToMono(String.class)
-                .flatMap(this::parseHtml)
-                .onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
+        return this.getWebClient().post().uri(url).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
+            try {
+                return parseHtml(html);
+            } catch (Exception e) {
+                return Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
+            }
+        }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
     }
 
-    private Mono<List<Map<String, Object>>> parseHtml(String html) {
+    private Mono<List<Map<String, Object>>> parseHtml(String html) throws APIException {
         return Mono.fromSupplier(() -> {
             // Parse HTML with Jsoup
             Document doc = Jsoup.parse(html);
@@ -47,11 +48,13 @@ public class ScheduleAPIService extends APIService {
             // Select course sections
             Elements courseTables = doc.select("hr + table");
             for (Element courseTable : courseTables) {
-                // Extract course information
-                Map<String, Object> courseInfo = new HashMap<>();
-                courseInfo.put("code", courseTable.select("td b font[color=\"#0000FF\"]").eq(0).text().trim());
-                courseInfo.put("name", courseTable.select("td b font[color=\"#0000FF\"]").eq(1).text().trim());
-                courseInfo.put("credits", courseTable.select("td b font[color=\"#0000FF\"]").eq(2).text().trim());
+                // Extract course info
+                Module module = new ClassModule();
+                module.setModuleCode(courseTable.select("td b font[color=\"#0000FF\"]").eq(0).text().trim()).setName(courseTable.select("td b font[color=\"#0000FF\"]").eq(1).text().trim()).setCredits(Float.parseFloat(courseTable.select("td b font[color=\"#0000FF\"]").eq(2).text().trim().replace(" AU", "")));
+
+                System.out.println(module.getModuleCode());
+                System.out.println(module.getName());
+                System.out.println(module.getCredits());
 
                 // Extract prerequisites
                 List<String> prerequisites = new ArrayList<>();
@@ -71,6 +74,9 @@ public class ScheduleAPIService extends APIService {
                     if (columns.size() > 0) {
                         try {
                             Map<String, String> scheduleEntry = new HashMap<>();
+
+                            ClassModule classModule = (ClassModule) module;
+
                             scheduleEntry.put("index", columns.get(0).text().trim());
                             scheduleEntry.put("type", columns.get(1).text().trim());
                             scheduleEntry.put("group", columns.get(2).text().trim());
@@ -100,7 +106,7 @@ public class ScheduleAPIService extends APIService {
         });
     }
 
-    private Mono<Void> saveToJsonFile(List<Map<String, Object>> courses) {
+    public Mono<Void> saveToJsonFile(List<Map<String, Object>> courses) {
         return Mono.fromRunnable(() -> {
             try (FileWriter file = new FileWriter("courses_data.json")) {
                 file.write(courses.toString()); // Use ObjectMapper for prettier output if needed

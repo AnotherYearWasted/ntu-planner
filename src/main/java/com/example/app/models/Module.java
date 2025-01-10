@@ -1,18 +1,18 @@
 package com.example.app.models;
 
 import java.util.HashSet;
-import java.util.List;
 
 public class Module {
-    private Long id;
+    private final Long id;
     private String name;
     private String description;
     private String moduleType;
     private String moduleCode;
-    private String lecturer;
+    private Float credits;
     private HashSet<String> prerequisites;
 
     public Module() {
+        this.id = null;
     }
 
     public Module(ModuleBuilder builder) {
@@ -21,7 +21,7 @@ public class Module {
         this.description = builder.description;
         this.moduleType = builder.moduleType;
         this.moduleCode = builder.moduleCode;
-        this.lecturer = builder.lecturer;
+        this.credits = builder.credits;
         this.prerequisites = builder.prerequisites;
     }
 
@@ -45,8 +45,8 @@ public class Module {
         return moduleCode;
     }
 
-    public String getLecturer() {
-        return lecturer;
+    public Float getCredits() {
+        return credits;
     }
 
     public HashSet<String> getPrerequisites() {
@@ -73,8 +73,8 @@ public class Module {
         return this;
     }
 
-    public Module setLecturer(String lecturer) {
-        this.lecturer = lecturer;
+    public Module setCredits(Float moduleCredits) {
+        this.credits = moduleCredits;
         return this;
     }
 
@@ -108,7 +108,7 @@ public class Module {
         private String description;
         private String moduleType;
         private String moduleCode;
-        private String lecturer;
+        private Float credits;
         private HashSet<String> prerequisites;
 
         public ModuleBuilder setId(Long id) {
@@ -136,8 +136,8 @@ public class Module {
             return this;
         }
 
-        public ModuleBuilder setLecturer(String lecturer) {
-            this.lecturer = lecturer;
+        public ModuleBuilder setCredits(Float credits) {
+            this.credits = credits;
             return this;
         }
 
