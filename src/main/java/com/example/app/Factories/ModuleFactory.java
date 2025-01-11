@@ -9,8 +9,7 @@ public class ModuleFactory {
     public static com.example.app.models.Module createModule() throws FactoryException {
         try {
             return new Module.ModuleBuilder().build();
-        }
-        catch (BuilderException e) {
+        } catch (BuilderException e) {
             throw new FactoryException(e);
         }
     }

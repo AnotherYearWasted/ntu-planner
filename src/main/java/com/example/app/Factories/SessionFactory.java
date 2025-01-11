@@ -10,11 +10,9 @@ public class SessionFactory {
     public static Session createSession(Index index) throws FactoryException {
         try {
             return new Session.SessionBuilder().setIndexId(index.getIndex()).build();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new FactoryException(e);
         }
     }
 
 }
-

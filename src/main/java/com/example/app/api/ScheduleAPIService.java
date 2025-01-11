@@ -35,13 +35,14 @@ public class ScheduleAPIService extends APIService {
     public Mono<List<Module>> getSchedule() throws APIException {
         String formData = "acadsem=2024;2&boption=CLoad&staff_access=false&r_search_type=F&acadsem=2023;2&r_course_yr=CSC;;1;F";
         System.out.println("Getting schedule data...");
-        return this.getWebClient().post().uri(url).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
-            try {
-                return parseHtml(html);
-            } catch (Exception e) {
-                return Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
-            }
-        }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
+        return this.getWebClient().post().uri(url).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
+                    try {
+                        return parseHtml(html);
+                    } catch (Exception e) {
+                        return Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
+                    }
+                }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
     }
 
     private Mono<List<Module>> parseHtml(String html) throws APIException {
@@ -58,7 +59,10 @@ public class ScheduleAPIService extends APIService {
                 for (Element courseTable : courseTables) {
                     // Extract course info
                     Module module = ModuleFactory.createModule();
-                    module.setModuleCode(courseTable.select("td b font[color=\"#0000FF\"]").eq(0).text().trim()).setName(courseTable.select("td b font[color=\"#0000FF\"]").eq(1).text().trim()).setCredits(Float.parseFloat(courseTable.select("td b font[color=\"#0000FF\"]").eq(2).text().trim().replace(" AU", "")));
+                    module.setModuleCode(courseTable.select("td b font[color=\"#0000FF\"]").eq(0).text().trim())
+                            .setName(courseTable.select("td b font[color=\"#0000FF\"]").eq(1).text().trim())
+                            .setCredits(Float.parseFloat(courseTable.select("td b font[color=\"#0000FF\"]").eq(2).text()
+                                    .trim().replace(" AU", "")));
 
                     // Extract prerequisites
                     Elements prerequisiteElements = courseTable.select("td[colspan=\"2\"] b font[color=\"#FF00FF\"]");
@@ -102,21 +106,21 @@ public class ScheduleAPIService extends APIService {
                                 session.setGroup(lastSession.getGroup());
                             } else {
                                 switch (columns.get(1).text().trim()) {
-                                    case "LEC/STUDIO":
-                                        session.setSessionType(Session.SessionType.LECTURE);
-                                        break;
-                                    case "TUT":
-                                        session.setSessionType(Session.SessionType.TUTORIAL);
-                                        break;
-                                    case "LAB":
-                                        session.setSessionType(Session.SessionType.LAB);
-                                        break;
-                                    case "SEM":
-                                        session.setSessionType(Session.SessionType.SEMINAR);
-                                        break;
-                                    default:
-                                        session.setSessionType(Session.SessionType.UNKNOWN);
-                                        break;
+                                case "LEC/STUDIO":
+                                    session.setSessionType(Session.SessionType.LECTURE);
+                                    break;
+                                case "TUT":
+                                    session.setSessionType(Session.SessionType.TUTORIAL);
+                                    break;
+                                case "LAB":
+                                    session.setSessionType(Session.SessionType.LAB);
+                                    break;
+                                case "SEM":
+                                    session.setSessionType(Session.SessionType.SEMINAR);
+                                    break;
+                                default:
+                                    session.setSessionType(Session.SessionType.UNKNOWN);
+                                    break;
                                 }
                             }
 
@@ -130,27 +134,27 @@ public class ScheduleAPIService extends APIService {
                                 session.setDay(lastSession.getDay());
                             } else {
                                 switch (columns.get(3).text().trim()) {
-                                    case "MON":
-                                        session.setDay(DayOfWeek.MONDAY);
-                                        break;
-                                    case "TUE":
-                                        session.setDay(DayOfWeek.TUESDAY);
-                                        break;
-                                    case "WED":
-                                        session.setDay(DayOfWeek.WEDNESDAY);
-                                        break;
-                                    case "THU":
-                                        session.setDay(DayOfWeek.THURSDAY);
-                                        break;
-                                    case "FRI":
-                                        session.setDay(DayOfWeek.FRIDAY);
-                                        break;
-                                    case "SAT":
-                                        session.setDay(DayOfWeek.SATURDAY);
-                                        break;
-                                    default:
-                                        session.setDay(DayOfWeek.SUNDAY);
-                                        break;
+                                case "MON":
+                                    session.setDay(DayOfWeek.MONDAY);
+                                    break;
+                                case "TUE":
+                                    session.setDay(DayOfWeek.TUESDAY);
+                                    break;
+                                case "WED":
+                                    session.setDay(DayOfWeek.WEDNESDAY);
+                                    break;
+                                case "THU":
+                                    session.setDay(DayOfWeek.THURSDAY);
+                                    break;
+                                case "FRI":
+                                    session.setDay(DayOfWeek.FRIDAY);
+                                    break;
+                                case "SAT":
+                                    session.setDay(DayOfWeek.SATURDAY);
+                                    break;
+                                default:
+                                    session.setDay(DayOfWeek.SUNDAY);
+                                    break;
                                 }
                             }
 
@@ -209,9 +213,13 @@ public class ScheduleAPIService extends APIService {
     }
 
     /**
-     * @param courses The list of courses to save to a JSON file
-     * @param path    The string path to save the JSON file to
+     * @param courses
+     *            The list of courses to save to a JSON file
+     * @param path
+     *            The string path to save the JSON file to
+     *
      * @return A Mono that completes when the data is saved to the file
+     *
      * @see Mono
      */
     public Mono<Void> saveToJsonFile(List<Module> courses, String path) {
@@ -227,6 +235,5 @@ public class ScheduleAPIService extends APIService {
             }
         });
     }
-
 
 }

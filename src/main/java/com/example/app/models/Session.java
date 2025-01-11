@@ -8,11 +8,7 @@ import java.time.DayOfWeek;
 public class Session {
 
     public enum SessionType {
-        LECTURE,
-        TUTORIAL,
-        LAB,
-        SEMINAR,
-        UNKNOWN
+        LECTURE, TUTORIAL, LAB, SEMINAR, UNKNOWN
     }
 
     private Long indexId;
@@ -30,7 +26,8 @@ public class Session {
 
     }
 
-    private Session(DayOfWeek day, Long startHour, Long startMinute, Long endHour, Long endMinute) throws ModelException {
+    private Session(DayOfWeek day, Long startHour, Long startMinute, Long endHour, Long endMinute)
+            throws ModelException {
         this.day = day;
         this.startHour = startHour;
         this.startMinute = startMinute;
