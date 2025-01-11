@@ -27,7 +27,7 @@ jobs:
         with:
           java-version: '17'
       - name: Build with Maven
-        run: mvn springboot:run
+        run: mvn spring-boot:run
       - name: Linting
         run: mvn formatter:validate
       - name: Run tests
