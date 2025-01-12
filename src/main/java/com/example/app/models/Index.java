@@ -11,6 +11,8 @@ public class Index {
     private Long id;
     private Long index;
     private Long moduleId;
+    private Long vacant;
+    private Long waitlist;
     private HashSet<Session> sessions;
 
     public Index(Long moduleId, Long index) {

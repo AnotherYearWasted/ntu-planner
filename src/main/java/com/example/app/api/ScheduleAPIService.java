@@ -32,10 +32,17 @@ public class ScheduleAPIService extends APIService {
         super(url);
     }
 
+    /**
+     * Retrieves the schedule data from the API
+     *
+     * @return A mono that emits a list of modules
+     *
+     * @throws APIException
+     */
     public Mono<List<Module>> getSchedule() throws APIException {
         String formData = "acadsem=2024;2&boption=CLoad&staff_access=false&r_search_type=F&acadsem=2023;2&r_course_yr=CSC;;1;F";
         System.out.println("Getting schedule data...");
-        return this.getWebClient().post().uri(url).contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        return this.getWebClient().post().contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
                     try {
                         return parseHtml(html);
@@ -45,6 +52,17 @@ public class ScheduleAPIService extends APIService {
                 }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
     }
 
+    /**
+     * Parses the HTML response from the schedule API The HTML response is parsed using Jsoup
+     *
+     * @param html
+     *            The HTML response from the schedule API
+     *
+     * @return A mono that emits a list of modules
+     *
+     * @see Mono
+     * @see Jsoup
+     */
     private Mono<List<Module>> parseHtml(String html) throws APIException {
         return Mono.fromSupplier(() -> {
             List<Module> courses = new ArrayList<>();
@@ -234,6 +252,16 @@ public class ScheduleAPIService extends APIService {
                 throw new RuntimeException("Error saving data to file: " + e.getMessage(), e);
             }
         });
+    }
+
+    /**
+     * Retrieves the vacancies from the API Warning: This method only works between 9am and 10pm GMT+8 (Singapore)
+     *
+     * @return A mono that emits a module and its index vacancies
+     *
+     */
+    public Mono<Module> getVacancies() throws APIException {
+        return null;
     }
 
 }
