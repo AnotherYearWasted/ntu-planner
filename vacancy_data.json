@@ -1,0 +1,213 @@
+[
+  {
+    "id": null,
+    "name": null,
+    "description": null,
+    "moduleType": null,
+    "moduleCode": null,
+    "credits": null,
+    "prerequisites": [],
+    "indexes": {
+      "10176": {
+        "id": null,
+        "index": 10176,
+        "moduleId": null,
+        "vacant": 7,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10177": {
+        "id": null,
+        "index": 10177,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10178": {
+        "id": null,
+        "index": 10178,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10179": {
+        "id": null,
+        "index": 10179,
+        "moduleId": null,
+        "vacant": 6,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10180": {
+        "id": null,
+        "index": 10180,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10181": {
+        "id": null,
+        "index": 10181,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10157": {
+        "id": null,
+        "index": 10157,
+        "moduleId": null,
+        "vacant": 4,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10158": {
+        "id": null,
+        "index": 10158,
+        "moduleId": null,
+        "vacant": 3,
+        "waitlist": 1,
+        "sessions": null
+      },
+      "10159": {
+        "id": null,
+        "index": 10159,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10160": {
+        "id": null,
+        "index": 10160,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10161": {
+        "id": null,
+        "index": 10161,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10162": {
+        "id": null,
+        "index": 10162,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10163": {
+        "id": null,
+        "index": 10163,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10164": {
+        "id": null,
+        "index": 10164,
+        "moduleId": null,
+        "vacant": 4,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10165": {
+        "id": null,
+        "index": 10165,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10166": {
+        "id": null,
+        "index": 10166,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10167": {
+        "id": null,
+        "index": 10167,
+        "moduleId": null,
+        "vacant": 2,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10168": {
+        "id": null,
+        "index": 10168,
+        "moduleId": null,
+        "vacant": 4,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10169": {
+        "id": null,
+        "index": 10169,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10170": {
+        "id": null,
+        "index": 10170,
+        "moduleId": null,
+        "vacant": 0,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10171": {
+        "id": null,
+        "index": 10171,
+        "moduleId": null,
+        "vacant": 6,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10172": {
+        "id": null,
+        "index": 10172,
+        "moduleId": null,
+        "vacant": 2,
+        "waitlist": 1,
+        "sessions": null
+      },
+      "10173": {
+        "id": null,
+        "index": 10173,
+        "moduleId": null,
+        "vacant": 8,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10174": {
+        "id": null,
+        "index": 10174,
+        "moduleId": null,
+        "vacant": 1,
+        "waitlist": 0,
+        "sessions": null
+      },
+      "10175": {
+        "id": null,
+        "index": 10175,
+        "moduleId": null,
+        "vacant": 5,
+        "waitlist": 0,
+        "sessions": null
+      }
+    }
+  }
+]

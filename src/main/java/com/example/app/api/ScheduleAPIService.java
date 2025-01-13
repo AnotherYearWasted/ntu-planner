@@ -44,7 +44,7 @@ public class ScheduleAPIService extends APIService {
         return this.getWebClient().post().uri("AUS_SCHEDULE.main_display1").contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
                     try {
-                        return parseHtml(html);
+                        return parseSchedules(html);
                     } catch (Exception e) {
                         return Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
                     }
@@ -89,7 +89,7 @@ public class ScheduleAPIService extends APIService {
      * @see Mono
      * @see Jsoup
      */
-    private Mono<List<Module>> parseHtml(String html) throws APIException {
+    private Mono<List<Module>> parseSchedules(String html) throws APIException {
         return Mono.fromSupplier(() -> {
             List<Module> courses = new ArrayList<>();
             System.out.print("Parsing HTML...");
@@ -245,21 +245,99 @@ public class ScheduleAPIService extends APIService {
             try {
                 // Serialize the list of courses into JSON and write to a file
                 objectMapper.writeValue(new File(path), courses);
-                System.out.println("Data saved to courses_data.json");
+                System.out.println("Data saved to file: " + path);
             } catch (IOException e) {
                 throw new RuntimeException("Error saving data to file: " + e.getMessage(), e);
             }
         });
     }
 
+    public Mono<Module> getVacancies(String moduleCode) throws APIException {
+        String formData = String.format("subj=%s", moduleCode);
+        System.out.println("Getting vacancies for " + moduleCode + "...");
+
+        return this.getWebClient().post()
+                .uri("aus_vacancy.check_vacancy2")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromValue(formData))
+                .retrieve()
+                .onStatus(
+                        status -> status.value() == 400,
+                        clientResponse -> {
+                            System.err.println("Client error occurred: " + clientResponse.statusCode());
+                            return clientResponse.bodyToMono(String.class)
+                                    .flatMap(errorMessage -> Mono.error(new APIException(errorMessage)));
+                        }
+                )
+                .bodyToMono(String.class)
+                .flatMap(html -> {
+                    try {
+                        return parseVacancies(html);
+                    } catch (Exception e) {
+                        return Mono.error(new APIException("Error parsing vacancies: " + e.getMessage(), e));
+                    }
+                })
+                .onErrorMap(error -> {
+                    System.err.println("Error getting vacancies: " + error.getMessage());
+                    return new APIException("Error getting vacancies: " + error.getMessage(), error);
+                });
+    }
+
     /**
-     * Retrieves the vacancies from the API Warning: This method only works between 9am and 10pm GMT+8 (Singapore)
+     * Parses the HTML response from the vacancies API
      *
+     * @param html The HTML response from the vacancies API
      * @return A mono that emits a module and its index vacancies
      */
-    public Mono<Module> getVacancies() throws APIException {
+    private Mono<Module> parseVacancies(String html) {
         return Mono.fromSupplier(() -> {
-            return null;
+            try {
+                // Create a new module instance
+                Module module = ModuleFactory.createModule();
+
+                // Parse the HTML document using Jsoup
+                Document doc = Jsoup.parse(html);
+
+                // Locate the table rows
+                Elements rows = doc.select("table[border] tr");
+
+                // Loop through each row (skipping the header row)
+                for (int i = 1; i < rows.size(); i++) { // Start from index 1 to skip the header
+                    Element row = rows.get(i);
+                    Elements columns = row.select("td");
+
+                    // Check if the row contains sufficient columns
+                    if (columns.size() >= 8) {
+                        // Parse the columns into meaningful data
+                        String indexStr = columns.get(0).text().trim();
+                        if (indexStr.isEmpty()) {
+                            // Skip rows without index numbers
+                            continue;
+                        }
+
+                        Long index = Long.parseLong(indexStr);
+                        Long vacancies = columns.get(1).text().trim().isEmpty() ? 0 : Long.parseLong(columns.get(1).text().trim());
+                        Long waitlist = columns.get(2).text().trim().isEmpty() ? 0 : Long.parseLong(columns.get(2).text().trim());
+                        String classType = columns.get(3).text().trim();
+                        String group = columns.get(4).text().trim();
+                        String day = columns.get(5).text().trim();
+                        String time = columns.get(6).text().trim();
+                        String venue = columns.get(7).text().trim();
+
+                        // Create an Index object and populate its fields
+                        Index indexObj = IndexFactory.createIndex(module, index)
+                                .setVacant(vacancies)
+                                .setWaitlist(waitlist);
+
+                        // Add the Index object to the Module
+                        module.addIndex(indexObj);
+                    }
+                }
+
+                return module; // Return the populated module
+            } catch (Exception e) {
+                throw new RuntimeException("Error parsing vacancies: " + e.getMessage(), e);
+            }
         });
     }
 

@@ -128,7 +128,7 @@ public class Module {
 
     public Module removeIndex(Index index) {
         if (index != null) {
-            indexes.remove(index);
+            indexes.remove(index.getIndex());
         }
         return this;
     }
@@ -215,7 +215,7 @@ public class Module {
 
         public ModuleBuilder removeIndex(Index index) {
             if (indexes != null) {
-                indexes.remove(index);
+                indexes.remove(index.getIndex());
             }
             return this;
         }

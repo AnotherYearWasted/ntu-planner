@@ -2,9 +2,7 @@ package com.example.app.models;
 
 import com.example.app.exceptions.ModelException;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 public class Index {
 
@@ -20,6 +18,10 @@ public class Index {
         this.moduleId = moduleId;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public Long getIndex() {
         return index;
     }
@@ -32,27 +34,46 @@ public class Index {
         return moduleId;
     }
 
-    public void setIndex(Long index) {
+    public Long getVacant() {
+        return vacant;
+    }
+
+    public Long getWaitlist() {
+        return waitlist;
+    }
+
+    public Index setIndex(Long index) {
         this.index = index;
+        return this;
     }
 
-    public void setSessions(HashSet<Session> sessions) throws ModelException {
+    public Index setSessions(HashSet<Session> sessions) throws ModelException {
         this.sessions = new HashSet<>(sessions);
+        return this;
     }
 
-    public void addSession(Session session) throws ModelException {
+    public Index addSession(Session session) throws ModelException {
         if (this.sessions == null) {
             this.sessions = new HashSet<>();
         }
         this.sessions.add(session);
+        return this;
     }
 
-    public void setModuleId(Long moduleId) {
+    public Index setModuleId(Long moduleId) {
         this.moduleId = moduleId;
+        return this;
     }
 
-    public Long getId() {
-        return id;
+    public Index setVacant(Long vacant) {
+        this.vacant = vacant;
+        return this;
     }
+
+    public Index setWaitlist(Long waitlist) {
+        this.waitlist = waitlist;
+        return this;
+    }
+
 
 }
