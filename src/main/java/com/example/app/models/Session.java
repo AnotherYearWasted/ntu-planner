@@ -144,5 +144,4 @@ public class Session {
         return isOverlap(new Session(day, startHour, startMinute, endHour, endMinute));
     }
 
-
 }

@@ -36,13 +36,15 @@ public class ScheduleAPIService extends APIService {
      * Retrieves the schedule data from the API
      *
      * @return A mono that emits a list of modules
+     *
      * @throws APIException
      */
     public Mono<List<Module>> getSchedule() throws APIException {
         String formData = "acadsem=2024;2&boption=CLoad&staff_access=false&r_search_type=F&acadsem=2023;2&r_course_yr=CSC;;1;F";
         System.out.println("Getting schedule data...");
-        return this.getWebClient().post().uri("AUS_SCHEDULE.main_display1").contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
+        return this.getWebClient().post().uri("AUS_SCHEDULE.main_display1")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve()
+                .bodyToMono(String.class).flatMap(html -> {
                     try {
                         return parseSchedules(html);
                     } catch (Exception e) {
@@ -84,8 +86,11 @@ public class ScheduleAPIService extends APIService {
     /**
      * Parses the HTML response from the schedule API The HTML response is parsed using Jsoup
      *
-     * @param html The HTML response from the schedule API
+     * @param html
+     *            The HTML response from the schedule API
+     *
      * @return A mono that emits a list of modules
+     *
      * @see Mono
      * @see Jsoup
      */
@@ -147,51 +152,50 @@ public class ScheduleAPIService extends APIService {
                             Session session = SessionFactory.createSession(index);
 
                             switch (columns.get(1).text().trim()) {
-                                case "LEC/00":
-                                    session.setSessionType(Session.SessionType.LECTURE);
-                                    break;
-                                case "TUT":
-                                    session.setSessionType(Session.SessionType.TUTORIAL);
-                                    break;
-                                case "LAB":
-                                    session.setSessionType(Session.SessionType.LAB);
-                                    break;
-                                case "SEM":
-                                    session.setSessionType(Session.SessionType.SEMINAR);
-                                    break;
-                                default:
-                                    session.setSessionType(Session.SessionType.UNKNOWN);
-                                    break;
+                            case "LEC/00":
+                                session.setSessionType(Session.SessionType.LECTURE);
+                                break;
+                            case "TUT":
+                                session.setSessionType(Session.SessionType.TUTORIAL);
+                                break;
+                            case "LAB":
+                                session.setSessionType(Session.SessionType.LAB);
+                                break;
+                            case "SEM":
+                                session.setSessionType(Session.SessionType.SEMINAR);
+                                break;
+                            default:
+                                session.setSessionType(Session.SessionType.UNKNOWN);
+                                break;
                             }
 
                             session.setGroup(columns.get(2).text().trim());
 
                             switch (columns.get(3).text().trim()) {
-                                case "MON":
-                                    session.setDay(DayOfWeek.MONDAY);
-                                    break;
-                                case "TUE":
-                                    session.setDay(DayOfWeek.TUESDAY);
-                                    break;
-                                case "WED":
-                                    session.setDay(DayOfWeek.WEDNESDAY);
-                                    break;
-                                case "THU":
-                                    session.setDay(DayOfWeek.THURSDAY);
-                                    break;
-                                case "FRI":
-                                    session.setDay(DayOfWeek.FRIDAY);
-                                    break;
-                                case "SAT":
-                                    session.setDay(DayOfWeek.SATURDAY);
-                                    break;
-                                default:
-                                    session.setDay(DayOfWeek.SUNDAY);
-                                    break;
+                            case "MON":
+                                session.setDay(DayOfWeek.MONDAY);
+                                break;
+                            case "TUE":
+                                session.setDay(DayOfWeek.TUESDAY);
+                                break;
+                            case "WED":
+                                session.setDay(DayOfWeek.WEDNESDAY);
+                                break;
+                            case "THU":
+                                session.setDay(DayOfWeek.THURSDAY);
+                                break;
+                            case "FRI":
+                                session.setDay(DayOfWeek.FRIDAY);
+                                break;
+                            case "SAT":
+                                session.setDay(DayOfWeek.SATURDAY);
+                                break;
+                            default:
+                                session.setDay(DayOfWeek.SUNDAY);
+                                break;
                             }
 
                             String time = columns.get(4).text().trim();
-
 
                             String[] timeSplit = time.split("-");
                             String startHour = timeSplit[0].substring(0, 2);
@@ -233,9 +237,13 @@ public class ScheduleAPIService extends APIService {
     }
 
     /**
-     * @param courses The list of courses to save to a JSON file
-     * @param path    The string path to save the JSON file to
+     * @param courses
+     *            The list of courses to save to a JSON file
+     * @param path
+     *            The string path to save the JSON file to
+     *
      * @return A Mono that completes when the data is saved to the file
+     *
      * @see Mono
      */
     public Mono<Void> saveToJsonFile(List<Module> courses, String path) {
@@ -256,28 +264,19 @@ public class ScheduleAPIService extends APIService {
         String formData = String.format("subj=%s", moduleCode);
         System.out.println("Getting vacancies for " + moduleCode + "...");
 
-        return this.getWebClient().post()
-                .uri("aus_vacancy.check_vacancy2")
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(BodyInserters.fromValue(formData))
-                .retrieve()
-                .onStatus(
-                        status -> status.value() == 400,
-                        clientResponse -> {
-                            System.err.println("Client error occurred: " + clientResponse.statusCode());
-                            return clientResponse.bodyToMono(String.class)
-                                    .flatMap(errorMessage -> Mono.error(new APIException(errorMessage)));
-                        }
-                )
-                .bodyToMono(String.class)
-                .flatMap(html -> {
+        return this.getWebClient().post().uri("aus_vacancy.check_vacancy2")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve()
+                .onStatus(status -> status.value() == 400, clientResponse -> {
+                    System.err.println("Client error occurred: " + clientResponse.statusCode());
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorMessage -> Mono.error(new APIException(errorMessage)));
+                }).bodyToMono(String.class).flatMap(html -> {
                     try {
                         return parseVacancies(html);
                     } catch (Exception e) {
                         return Mono.error(new APIException("Error parsing vacancies: " + e.getMessage(), e));
                     }
-                })
-                .onErrorMap(error -> {
+                }).onErrorMap(error -> {
                     System.err.println("Error getting vacancies: " + error.getMessage());
                     return new APIException("Error getting vacancies: " + error.getMessage(), error);
                 });
@@ -286,7 +285,9 @@ public class ScheduleAPIService extends APIService {
     /**
      * Parses the HTML response from the vacancies API
      *
-     * @param html The HTML response from the vacancies API
+     * @param html
+     *            The HTML response from the vacancies API
+     *
      * @return A mono that emits a module and its index vacancies
      */
     private Mono<Module> parseVacancies(String html) {
@@ -316,8 +317,10 @@ public class ScheduleAPIService extends APIService {
                         }
 
                         Long index = Long.parseLong(indexStr);
-                        Long vacancies = columns.get(1).text().trim().isEmpty() ? 0 : Long.parseLong(columns.get(1).text().trim());
-                        Long waitlist = columns.get(2).text().trim().isEmpty() ? 0 : Long.parseLong(columns.get(2).text().trim());
+                        Long vacancies = columns.get(1).text().trim().isEmpty() ? 0
+                                : Long.parseLong(columns.get(1).text().trim());
+                        Long waitlist = columns.get(2).text().trim().isEmpty() ? 0
+                                : Long.parseLong(columns.get(2).text().trim());
                         String classType = columns.get(3).text().trim();
                         String group = columns.get(4).text().trim();
                         String day = columns.get(5).text().trim();
@@ -325,8 +328,7 @@ public class ScheduleAPIService extends APIService {
                         String venue = columns.get(7).text().trim();
 
                         // Create an Index object and populate its fields
-                        Index indexObj = IndexFactory.createIndex(module, index)
-                                .setVacant(vacancies)
+                        Index indexObj = IndexFactory.createIndex(module, index).setVacant(vacancies)
                                 .setWaitlist(waitlist);
 
                         // Add the Index object to the Module
