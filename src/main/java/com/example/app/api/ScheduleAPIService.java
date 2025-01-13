@@ -1,9 +1,12 @@
 package com.example.app.api;
 
+import com.example.app.Factories.IndexFactory;
+import com.example.app.Factories.ModuleFactory;
+import com.example.app.Factories.SessionFactory;
 import com.example.app.exceptions.APIException;
-import com.example.app.models.ClassModule;
+import com.example.app.models.Index;
 import com.example.app.models.Module;
-import com.fasterxml.jackson.core.StreamWriteConstraints;
+import com.example.app.models.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,7 +17,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
@@ -24,173 +26,224 @@ import java.util.Map;
 
 public class ScheduleAPIService extends APIService {
 
-    private static final String url = "https://wish.wis.ntu.edu.sg/webexe/owa/AUS_SCHEDULE.main_display1";
+    private static final String url = "https://wish.wis.ntu.edu.sg/webexe/owa/";
 
     public ScheduleAPIService() {
         super(url);
     }
 
+    /**
+     * Retrieves the schedule data from the API
+     *
+     * @return A mono that emits a list of modules
+     *
+     * @throws APIException
+     */
     public Mono<List<Module>> getSchedule() throws APIException {
         String formData = "acadsem=2024;2&boption=CLoad&staff_access=false&r_search_type=F&acadsem=2023;2&r_course_yr=CSC;;1;F";
         System.out.println("Getting schedule data...");
-        return this.getWebClient().post().uri(url).contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
-            try {
-                return parseHtml(html);
-            } catch (Exception e) {
-                return Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
-            }
-        }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
+        return this.getWebClient().post().uri("AUS_SCHEDULE.main_display1")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve()
+                .bodyToMono(String.class).flatMap(html -> {
+                    try {
+                        return parseSchedules(html);
+                    } catch (Exception e) {
+                        return Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
+                    }
+                }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
     }
 
-    private Mono<List<Module>> parseHtml(String html) throws APIException {
-        return Mono.fromSupplier(() -> {
-            // Parse HTML with Jsoup
-            Document doc = Jsoup.parse(html);
-            List<Module> courses = new ArrayList<>();
+    private int parseWeeks(String weeksStr) throws APIException {
+        if (weeksStr.isEmpty()) {
+            return (1 << 15) - 2; // Default: all weeks (bits 1-14 set to 1)
+        }
 
-            // Select course sections
-            Elements courseTables = doc.select("hr + table");
-            for (Element courseTable : courseTables) {
-                // Extract course info
-                Module module = new Module();
-                module.setModuleCode(courseTable.select("td b font[color=\"#0000FF\"]").eq(0).text().trim()).setName(courseTable.select("td b font[color=\"#0000FF\"]").eq(1).text().trim()).setCredits(Float.parseFloat(courseTable.select("td b font[color=\"#0000FF\"]").eq(2).text().trim().replace(" AU", "")));
+        if (weeksStr.equals("Not conducted during Teaching Weeks")) {
+            return 0; // No weeks
+        }
 
-                // Extract prerequisites
-                Elements prerequisiteElements = courseTable.select("td[colspan=\"2\"] b font[color=\"#FF00FF\"]");
-                for (Element element : prerequisiteElements) {
-                    String text = element.text().trim();
-                    if (!text.isEmpty() && !text.startsWith("&nbsp;")) {
-                        module.addPrerequisite(text.replace("&nbsp;", "").trim());
+        int bitmask = 0;
+        try {
+            String[] ranges = weeksStr.substring(11).split(","); // Remove "Teaching " prefix
+            for (String range : ranges) {
+                String[] bounds = range.split("-");
+                if (bounds.length == 1) {
+                    bitmask |= 1 << Integer.parseInt(bounds[0]);
+                } else {
+                    int start = Integer.parseInt(bounds[0]);
+                    int end = Integer.parseInt(bounds[1]);
+                    for (int i = start; i <= end; i++) {
+                        bitmask |= 1 << i;
                     }
                 }
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid weeks format: " + weeksStr);
+        }
+        return bitmask;
+    }
 
-                // Extract schedule
-                Elements scheduleRows = courseTable.nextElementSibling().select("table[border] tr");
-                for (int i = 1; i < scheduleRows.size(); i++) { // Skip header row
-                    Elements columns = scheduleRows.get(i).select("td b");
-                    if (columns.size() == 7) {
+    /**
+     * Parses the HTML response from the schedule API The HTML response is parsed using Jsoup
+     *
+     * @param html
+     *            The HTML response from the schedule API
+     *
+     * @return A mono that emits a list of modules
+     *
+     * @see Mono
+     * @see Jsoup
+     */
+    private Mono<List<Module>> parseSchedules(String html) throws APIException {
+        return Mono.fromSupplier(() -> {
+            List<Module> courses = new ArrayList<>();
+            System.out.print("Parsing HTML...");
+            try {
 
-                        Map<String, String> scheduleEntry = new HashMap<>();
+                // Parse HTML with Jsoup
+                Document doc = Jsoup.parse(html);
 
-                        ClassModule classModule = new ClassModule();
+                // Select course sections
+                Elements courseTables = doc.select("hr + table");
+                for (Element courseTable : courseTables) {
+                    // Extract course info
+                    Module module = ModuleFactory.createModule();
+                    module.setModuleCode(courseTable.select("td b font[color=\"#0000FF\"]").eq(0).text().trim())
+                            .setName(courseTable.select("td b font[color=\"#0000FF\"]").eq(1).text().trim())
+                            .setCredits(Float.parseFloat(courseTable.select("td b font[color=\"#0000FF\"]").eq(2).text()
+                                    .trim().replace(" AU", "")));
 
-                        classModule.setModule(module);
-
-                        // Set the index of the last entry
-                        if (columns.get(0).text().trim().isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.setIndex(module.getSchedules().get(module.getSchedules().size() - 1).getIndex());
-                        } else {
-                            classModule.setIndex(Long.parseLong(columns.get(0).text().trim()));
+                    // Extract prerequisites
+                    Elements prerequisiteElements = courseTable.select("td[colspan=\"2\"] b font[color=\"#FF00FF\"]");
+                    for (Element element : prerequisiteElements) {
+                        String text = element.text().trim();
+                        if (!text.isEmpty() && !text.startsWith("&nbsp;")) {
+                            module.addPrerequisite(text.replace("&nbsp;", "").trim());
                         }
+                    }
 
-                        if (columns.get(1).text().trim().isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.setClassType(module.getSchedules().get(module.getSchedules().size() - 1).getClassType());
-                        } else {
+                    // Extract schedule
+                    Elements scheduleRows = courseTable.nextElementSibling().select("table[border] tr");
+
+                    Index dummy = IndexFactory.createIndex(module, null);
+                    Session lastSession = SessionFactory.createSession(dummy);
+
+                    for (int i = 1; i < scheduleRows.size(); i++) { // Skip header row
+                        Elements columns = scheduleRows.get(i).select("td b");
+                        if (columns.size() == 7) {
+
+                            Map<String, String> scheduleEntry = new HashMap<>();
+
+                            Long indexId;
+                            // Set the index of the last entry
+                            if (columns.get(0).text().trim().isEmpty() && lastSession.getIndexId() != null) {
+                                indexId = lastSession.getIndexId();
+                            } else {
+                                indexId = Long.parseLong(columns.get(0).text().trim());
+                            }
+
+                            if (module.getIndexes().get(indexId) == null) {
+                                Index index = IndexFactory.createIndex(module, indexId);
+                                module.addIndex(index);
+                            }
+
+                            Index index = module.getIndexes().get(indexId);
+
+                            Session session = SessionFactory.createSession(index);
+
                             switch (columns.get(1).text().trim()) {
-                                case "LEC/STUDIO":
-                                    classModule.setClassType(ClassModule.ClassType.LECTURE);
-                                    break;
-                                case "TUT":
-                                    classModule.setClassType(ClassModule.ClassType.TUTORIAL);
-                                    break;
-                                case "LAB":
-                                    classModule.setClassType(ClassModule.ClassType.LAB);
-                                    break;
-                                case "SEM":
-                                    classModule.setClassType(ClassModule.ClassType.SEMINAR);
-                                    break;
-                                default:
-                                    classModule.setClassType(ClassModule.ClassType.UNKNOWN);
-                                    break;
+                            case "LEC/00":
+                                session.setSessionType(Session.SessionType.LECTURE);
+                                break;
+                            case "TUT":
+                                session.setSessionType(Session.SessionType.TUTORIAL);
+                                break;
+                            case "LAB":
+                                session.setSessionType(Session.SessionType.LAB);
+                                break;
+                            case "SEM":
+                                session.setSessionType(Session.SessionType.SEMINAR);
+                                break;
+                            default:
+                                session.setSessionType(Session.SessionType.UNKNOWN);
+                                break;
                             }
-                        }
 
-                        if (columns.get(2).text().trim().isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.setGroup(module.getSchedules().get(module.getSchedules().size() - 1).getGroup());
-                        } else {
-                            classModule.setGroup(columns.get(2).text().trim());
-                        }
+                            session.setGroup(columns.get(2).text().trim());
 
-                        if (columns.get(3).text().trim().isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.getSession().setDay(module.getSchedules().get(module.getSchedules().size() - 1).getSession().getDay());
-                        } else {
                             switch (columns.get(3).text().trim()) {
-                                case "MON":
-                                    classModule.getSession().setDay(DayOfWeek.MONDAY);
-                                    break;
-                                case "TUE":
-                                    classModule.getSession().setDay(DayOfWeek.TUESDAY);
-                                    break;
-                                case "WED":
-                                    classModule.getSession().setDay(DayOfWeek.WEDNESDAY);
-                                    break;
-                                case "THU":
-                                    classModule.getSession().setDay(DayOfWeek.THURSDAY);
-                                    break;
-                                case "FRI":
-                                    classModule.getSession().setDay(DayOfWeek.FRIDAY);
-                                    break;
-                                case "SAT":
-                                    classModule.getSession().setDay(DayOfWeek.SATURDAY);
-                                    break;
-                                default:
-                                    classModule.getSession().setDay(DayOfWeek.SUNDAY);
-                                    break;
+                            case "MON":
+                                session.setDay(DayOfWeek.MONDAY);
+                                break;
+                            case "TUE":
+                                session.setDay(DayOfWeek.TUESDAY);
+                                break;
+                            case "WED":
+                                session.setDay(DayOfWeek.WEDNESDAY);
+                                break;
+                            case "THU":
+                                session.setDay(DayOfWeek.THURSDAY);
+                                break;
+                            case "FRI":
+                                session.setDay(DayOfWeek.FRIDAY);
+                                break;
+                            case "SAT":
+                                session.setDay(DayOfWeek.SATURDAY);
+                                break;
+                            default:
+                                session.setDay(DayOfWeek.SUNDAY);
+                                break;
                             }
-                        }
 
-                        String time = columns.get(4).text().trim();
+                            String time = columns.get(4).text().trim();
 
-                        if (time.isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.getSession().setStartHour(module.getSchedules().get(module.getSchedules().size() - 1).getSession().getStartHour());
-                            classModule.getSession().setStartMinute(module.getSchedules().get(module.getSchedules().size() - 1).getSession().getStartMinute());
-                            classModule.getSession().setEndHour(module.getSchedules().get(module.getSchedules().size() - 1).getSession().getEndHour());
-                            classModule.getSession().setEndMinute(module.getSchedules().get(module.getSchedules().size() - 1).getSession().getEndMinute());
-                        } else {
                             String[] timeSplit = time.split("-");
                             String startHour = timeSplit[0].substring(0, 2);
                             String startMinute = timeSplit[0].substring(2);
                             String endHour = timeSplit[1].substring(0, 2);
                             String endMinute = timeSplit[1].substring(2);
 
-                            classModule.getSession().setStartHour(Integer.parseInt(startHour));
-                            classModule.getSession().setStartMinute(Integer.parseInt(startMinute));
-                            classModule.getSession().setEndHour(Integer.parseInt(endHour));
-                            classModule.getSession().setEndMinute(Integer.parseInt(endMinute));
-                        }
+                            session.setStartHour(Long.parseLong(startHour));
+                            session.setStartMinute(Long.parseLong(startMinute));
+                            session.setEndHour(Long.parseLong(endHour));
+                            session.setEndMinute(Long.parseLong(endMinute));
 
-                        if (columns.get(5).text().trim().isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.setVenue(module.getSchedules().get(module.getSchedules().size() - 1).getVenue());
+                            session.setVenue(columns.get(5).text().trim());
+
+                            String weeksStr = columns.get(6).text().trim();
+
+                            session.setWeeks(parseWeeks(weeksStr));
+
+                            session.setRemark(columns.get(6).text().trim());
+
+                            lastSession = session;
+                            index.addSession(session);
+
+                            module.addIndex(index);
+
                         } else {
-                            classModule.setVenue(columns.get(5).text().trim());
+                            System.out.println("Skipping row with " + columns.size() + " columns");
                         }
-
-                        if (columns.get(6).text().trim().isEmpty() && !module.getSchedules().isEmpty()) {
-                            classModule.setRemark(module.getSchedules().get(module.getSchedules().size() - 1).getRemark());
-                        } else {
-                            classModule.setRemark(columns.get(6).text().trim());
-                        }
-
-                        module.getSchedules().add(classModule);
-
-
-                    } else {
-                        System.out.println("Skipping row with " + columns.size() + " columns");
                     }
+
+                    courses.add(module);
                 }
 
-                courses.add(module);
+            } catch (Exception e) {
+                Mono.error(new APIException("Error parsing HTML: " + e.getMessage(), e));
             }
-
             return courses;
         });
     }
 
     /**
+     * @param courses
+     *            The list of courses to save to a JSON file
+     * @param path
+     *            The string path to save the JSON file to
      *
-     * @param courses The list of courses to save to a JSON file
-     * @param path The string path to save the JSON file to
      * @return A Mono that completes when the data is saved to the file
+     *
      * @see Mono
      */
     public Mono<Void> saveToJsonFile(List<Module> courses, String path) {
@@ -200,12 +253,94 @@ public class ScheduleAPIService extends APIService {
             try {
                 // Serialize the list of courses into JSON and write to a file
                 objectMapper.writeValue(new File(path), courses);
-                System.out.println("Data saved to courses_data.json");
+                System.out.println("Data saved to file: " + path);
             } catch (IOException e) {
                 throw new RuntimeException("Error saving data to file: " + e.getMessage(), e);
             }
         });
     }
 
+    public Mono<Module> getVacancies(String moduleCode) throws APIException {
+        String formData = String.format("subj=%s", moduleCode);
+        System.out.println("Getting vacancies for " + moduleCode + "...");
+
+        return this.getWebClient().post().uri("aus_vacancy.check_vacancy2")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED).body(BodyInserters.fromValue(formData)).retrieve()
+                .onStatus(status -> status.value() == 400, clientResponse -> {
+                    System.err.println("Client error occurred: " + clientResponse.statusCode());
+                    return clientResponse.bodyToMono(String.class)
+                            .flatMap(errorMessage -> Mono.error(new APIException(errorMessage)));
+                }).bodyToMono(String.class).flatMap(html -> {
+                    try {
+                        return parseVacancies(html);
+                    } catch (Exception e) {
+                        return Mono.error(new APIException("Error parsing vacancies: " + e.getMessage(), e));
+                    }
+                }).onErrorMap(error -> {
+                    System.err.println("Error getting vacancies: " + error.getMessage());
+                    return new APIException("Error getting vacancies: " + error.getMessage(), error);
+                });
+    }
+
+    /**
+     * Parses the HTML response from the vacancies API
+     *
+     * @param html
+     *            The HTML response from the vacancies API
+     *
+     * @return A mono that emits a module and its index vacancies
+     */
+    private Mono<Module> parseVacancies(String html) {
+        return Mono.fromSupplier(() -> {
+            try {
+                // Create a new module instance
+                Module module = ModuleFactory.createModule();
+
+                // Parse the HTML document using Jsoup
+                Document doc = Jsoup.parse(html);
+
+                // Locate the table rows
+                Elements rows = doc.select("table[border] tr");
+
+                // Loop through each row (skipping the header row)
+                for (int i = 1; i < rows.size(); i++) { // Start from index 1 to skip the header
+                    Element row = rows.get(i);
+                    Elements columns = row.select("td");
+
+                    // Check if the row contains sufficient columns
+                    if (columns.size() >= 8) {
+                        // Parse the columns into meaningful data
+                        String indexStr = columns.get(0).text().trim();
+                        if (indexStr.isEmpty()) {
+                            // Skip rows without index numbers
+                            continue;
+                        }
+
+                        Long index = Long.parseLong(indexStr);
+                        Long vacancies = columns.get(1).text().trim().isEmpty() ? 0
+                                : Long.parseLong(columns.get(1).text().trim());
+                        Long waitlist = columns.get(2).text().trim().isEmpty() ? 0
+                                : Long.parseLong(columns.get(2).text().trim());
+                        String classType = columns.get(3).text().trim();
+                        String group = columns.get(4).text().trim();
+                        String day = columns.get(5).text().trim();
+                        String time = columns.get(6).text().trim();
+                        String venue = columns.get(7).text().trim();
+
+                        // Create an Index object and populate its fields
+                        Index indexObj = IndexFactory.createIndex(module, index).setVacant(vacancies)
+                                .setWaitlist(waitlist);
+
+                        // Add the Index object to the Module
+                        module.addIndex(indexObj);
+                    }
+                }
+
+                return module; // Return the populated module
+            } catch (Exception e) {
+                throw new RuntimeException("Error parsing vacancies: " + e.getMessage(), e);
+            }
+        });
+    }
 
 }

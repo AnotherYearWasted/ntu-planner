@@ -1,8 +1,10 @@
 package com.example.app.models;
 
-import java.util.ArrayList;
+import com.example.app.exceptions.BuilderException;
+import com.example.app.exceptions.ModelException;
+
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 
 public class Module {
     private final Long id;
@@ -11,24 +13,24 @@ public class Module {
     private String moduleType;
     private String moduleCode;
     private Float credits;
-    private List<String> prerequisites;
-    private List<ClassModule> schedules;
+    private HashSet<String> prerequisites;
+    private HashMap<Long, Index> indexes;
 
-    public Module() {
+    private Module() {
         this.id = null;
-        this.prerequisites = new ArrayList<>();
-        this.schedules = new ArrayList<>();
+        this.prerequisites = new HashSet<>();
+        this.indexes = new HashMap<>();
     }
 
-    public Module(ModuleBuilder builder) {
+    private Module(ModuleBuilder builder) throws ModelException {
         this.id = builder.id;
         this.name = builder.name;
         this.description = builder.description;
         this.moduleType = builder.moduleType;
         this.moduleCode = builder.moduleCode;
         this.credits = builder.credits;
-        this.prerequisites = builder.prerequisites;
-        this.schedules = builder.schedules;
+        this.prerequisites = builder.prerequisites != null ? new HashSet<>(builder.prerequisites) : new HashSet<>();
+        this.indexes = builder.indexes != null ? new HashMap<>(builder.indexes) : new HashMap<>();
     }
 
     public Long getId() {
@@ -55,12 +57,12 @@ public class Module {
         return credits;
     }
 
-    public List<String> getPrerequisites() {
+    public HashSet<String> getPrerequisites() {
         return prerequisites;
     }
 
-    public List<ClassModule> getSchedules() {
-        return schedules;
+    public HashMap<Long, Index> getIndexes() {
+        return indexes;
     }
 
     public Module setName(String name) {
@@ -88,14 +90,14 @@ public class Module {
         return this;
     }
 
-    public Module setPrerequisites(List<String> prerequisites) {
-        this.prerequisites = prerequisites;
+    public Module setPrerequisites(HashSet<String> prerequisites) {
+        this.prerequisites = new HashSet<>(prerequisites);
         return this;
     }
 
     public Module addPrerequisite(String prerequisite) {
         if (prerequisites == null) {
-            prerequisites = new ArrayList<>();
+            prerequisites = new HashSet<>();
         }
         prerequisites.add(prerequisite);
         return this;
@@ -108,23 +110,25 @@ public class Module {
         return this;
     }
 
-
-    public Module setSchedules(List<ClassModule> schedules) {
-        this.schedules = schedules;
+    public Module setIndexes(HashMap<Long, Index> indexes) {
+        this.indexes = new HashMap<>(indexes);
         return this;
     }
 
-    public Module addSchedule(ClassModule classModule) {
-        if (schedules == null) {
-            schedules = new ArrayList<>();
+    public Module addIndex(Index index) throws ModelException {
+        if (index == null) {
+            throw new ModelException("Index cannot be null");
         }
-        schedules.add(classModule);
+        if (indexes == null) {
+            indexes = new HashMap<>();
+        }
+        indexes.put(index.getIndex(), index);
         return this;
     }
 
-    public Module removeSchedule(ClassModule classModule) {
-        if (schedules != null) {
-            schedules.remove(classModule);
+    public Module removeIndex(Index index) {
+        if (index != null) {
+            indexes.remove(index.getIndex());
         }
         return this;
     }
@@ -140,8 +144,8 @@ public class Module {
         private String moduleType;
         private String moduleCode;
         private Float credits;
-        private List<String> prerequisites;
-        private List<ClassModule> schedules;
+        private HashSet<String> prerequisites;
+        private HashMap<Long, Index> indexes;
 
         public ModuleBuilder setId(Long id) {
             this.id = id;
@@ -173,14 +177,14 @@ public class Module {
             return this;
         }
 
-        public ModuleBuilder setPrerequisites(List<String> prerequisites) {
-            this.prerequisites = prerequisites;
+        public ModuleBuilder setPrerequisites(HashSet<String> prerequisites) {
+            this.prerequisites = new HashSet<>(prerequisites);
             return this;
         }
 
         public ModuleBuilder addPrerequisite(String prerequisite) {
             if (prerequisites == null) {
-                prerequisites = new ArrayList<>();
+                prerequisites = new HashSet<>();
             }
             prerequisites.add(prerequisite);
             return this;
@@ -193,28 +197,35 @@ public class Module {
             return this;
         }
 
-        public ModuleBuilder setSchedules(List<ClassModule> schedules) {
-            this.schedules = schedules;
+        public ModuleBuilder setIndexes(HashMap<Long, Index> indexes) {
+            this.indexes = new HashMap<>(indexes);
             return this;
         }
 
-        public ModuleBuilder addSchedule(ClassModule classModule) {
-            if (schedules == null) {
-                schedules = new ArrayList<>();
+        public ModuleBuilder addIndex(Index index) throws BuilderException {
+            if (index == null) {
+                throw new BuilderException("Index cannot be null");
             }
-            schedules.add(classModule);
+            if (indexes == null) {
+                indexes = new HashMap<>();
+            }
+            indexes.put(index.getIndex(), index);
             return this;
         }
 
-        public ModuleBuilder removeSchedule(ClassModule classModule) {
-            if (schedules != null) {
-                schedules.remove(classModule);
+        public ModuleBuilder removeIndex(Index index) {
+            if (indexes != null) {
+                indexes.remove(index.getIndex());
             }
             return this;
         }
 
-        public Module build() {
-            return new Module(this);
+        public Module build() throws BuilderException {
+            try {
+                return new Module(this);
+            } catch (ModelException e) {
+                throw new BuilderException(e);
+            }
         }
     }
 

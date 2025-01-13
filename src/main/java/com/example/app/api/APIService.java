@@ -11,8 +11,7 @@ public class APIService {
     // Constructor
     public APIService(String baseUrl) {
         this.baseUrl = baseUrl;
-        this.webClient = WebClient.builder()
-                .baseUrl(baseUrl)
+        this.webClient = WebClient.builder().baseUrl(baseUrl)
                 .exchangeStrategies(ExchangeStrategies.builder()
                         .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10 MB
                         .build())
