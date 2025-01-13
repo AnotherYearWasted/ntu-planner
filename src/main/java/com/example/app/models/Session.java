@@ -21,31 +21,19 @@ public class Session {
     private String venue;
     private String group;
     private String remark;
+    private int weeks;
 
-    private Session() throws ModelException {
+    public Session() throws ModelException {
 
     }
 
-    private Session(DayOfWeek day, Long startHour, Long startMinute, Long endHour, Long endMinute)
+    public Session(DayOfWeek day, Long startHour, Long startMinute, Long endHour, Long endMinute)
             throws ModelException {
         this.day = day;
         this.startHour = startHour;
         this.startMinute = startMinute;
         this.endHour = endHour;
         this.endMinute = endMinute;
-    }
-
-    private Session(SessionBuilder builder) throws ModelException {
-        this.indexId = builder.indexId;
-        this.day = builder.day;
-        this.startHour = builder.startHour;
-        this.startMinute = builder.startMinute;
-        this.endHour = builder.endHour;
-        this.endMinute = builder.endMinute;
-        this.sessionType = builder.sessionType;
-        this.venue = builder.venue;
-        this.group = builder.group;
-        this.remark = builder.remark;
     }
 
     public DayOfWeek getDay() {
@@ -88,6 +76,10 @@ public class Session {
         return sessionType;
     }
 
+    public int getWeeks() {
+        return weeks;
+    }
+
     public void setDay(DayOfWeek day) {
         this.day = day;
     }
@@ -124,6 +116,10 @@ public class Session {
         this.remark = remark;
     }
 
+    public void setWeeks(int weeks) {
+        this.weeks = weeks;
+    }
+
     public void setSessionType(SessionType sessionType) {
         this.sessionType = sessionType;
     }
@@ -148,80 +144,5 @@ public class Session {
         return isOverlap(new Session(day, startHour, startMinute, endHour, endMinute));
     }
 
-    public static class SessionBuilder {
-
-        private Long indexId;
-        private DayOfWeek day;
-        private Long startHour;
-        private Long startMinute;
-        private Long endHour;
-        private Long endMinute;
-        private SessionType sessionType;
-        private String venue;
-        private String group;
-        private String remark;
-
-        public SessionBuilder() throws BuilderException {
-        }
-
-        public SessionBuilder setIndexId(Long indexId) {
-            this.indexId = indexId;
-            return this;
-        }
-
-        public SessionBuilder setDay(DayOfWeek day) {
-            this.day = day;
-            return this;
-        }
-
-        public SessionBuilder setStartHour(Long startHour) {
-            this.startHour = startHour;
-            return this;
-        }
-
-        public SessionBuilder setStartMinute(Long startMinute) {
-            this.startMinute = startMinute;
-            return this;
-        }
-
-        public SessionBuilder setEndHour(Long endHour) {
-            this.endHour = endHour;
-            return this;
-        }
-
-        public SessionBuilder setEndMinute(Long endMinute) {
-            this.endMinute = endMinute;
-            return this;
-        }
-
-        public SessionBuilder setSessionType(SessionType sessionType) {
-            this.sessionType = sessionType;
-            return this;
-        }
-
-        public SessionBuilder setVenue(String venue) {
-            this.venue = venue;
-            return this;
-        }
-
-        public SessionBuilder setGroup(String group) {
-            this.group = group;
-            return this;
-        }
-
-        public SessionBuilder setRemark(String remark) {
-            this.remark = remark;
-            return this;
-        }
-
-        public Session build() throws BuilderException {
-            try {
-                return new Session(this);
-            } catch (ModelException e) {
-                throw new BuilderException(e);
-            }
-        }
-
-    }
 
 }

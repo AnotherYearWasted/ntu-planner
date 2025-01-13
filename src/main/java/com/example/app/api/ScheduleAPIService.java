@@ -26,7 +26,7 @@ import java.util.Map;
 
 public class ScheduleAPIService extends APIService {
 
-    private static final String url = "https://wish.wis.ntu.edu.sg/webexe/owa/AUS_SCHEDULE.main_display1";
+    private static final String url = "https://wish.wis.ntu.edu.sg/webexe/owa/";
 
     public ScheduleAPIService() {
         super(url);
@@ -36,13 +36,12 @@ public class ScheduleAPIService extends APIService {
      * Retrieves the schedule data from the API
      *
      * @return A mono that emits a list of modules
-     *
      * @throws APIException
      */
     public Mono<List<Module>> getSchedule() throws APIException {
         String formData = "acadsem=2024;2&boption=CLoad&staff_access=false&r_search_type=F&acadsem=2023;2&r_course_yr=CSC;;1;F";
         System.out.println("Getting schedule data...");
-        return this.getWebClient().post().contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        return this.getWebClient().post().uri("AUS_SCHEDULE.main_display1").contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromValue(formData)).retrieve().bodyToMono(String.class).flatMap(html -> {
                     try {
                         return parseHtml(html);
@@ -52,14 +51,41 @@ public class ScheduleAPIService extends APIService {
                 }).onErrorMap(error -> new APIException("Error getting schedule data: " + error.getMessage(), error));
     }
 
+    private int parseWeeks(String weeksStr) throws APIException {
+        if (weeksStr.isEmpty()) {
+            return (1 << 15) - 2; // Default: all weeks (bits 1-14 set to 1)
+        }
+
+        if (weeksStr.equals("Not conducted during Teaching Weeks")) {
+            return 0; // No weeks
+        }
+
+        int bitmask = 0;
+        try {
+            String[] ranges = weeksStr.substring(11).split(","); // Remove "Teaching " prefix
+            for (String range : ranges) {
+                String[] bounds = range.split("-");
+                if (bounds.length == 1) {
+                    bitmask |= 1 << Integer.parseInt(bounds[0]);
+                } else {
+                    int start = Integer.parseInt(bounds[0]);
+                    int end = Integer.parseInt(bounds[1]);
+                    for (int i = start; i <= end; i++) {
+                        bitmask |= 1 << i;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid weeks format: " + weeksStr);
+        }
+        return bitmask;
+    }
+
     /**
      * Parses the HTML response from the schedule API The HTML response is parsed using Jsoup
      *
-     * @param html
-     *            The HTML response from the schedule API
-     *
+     * @param html The HTML response from the schedule API
      * @return A mono that emits a list of modules
-     *
      * @see Mono
      * @see Jsoup
      */
@@ -120,11 +146,8 @@ public class ScheduleAPIService extends APIService {
 
                             Session session = SessionFactory.createSession(index);
 
-                            if (columns.get(1).text().trim().isEmpty() && lastSession.getIndexId() != null) {
-                                session.setGroup(lastSession.getGroup());
-                            } else {
-                                switch (columns.get(1).text().trim()) {
-                                case "LEC/STUDIO":
+                            switch (columns.get(1).text().trim()) {
+                                case "LEC/00":
                                     session.setSessionType(Session.SessionType.LECTURE);
                                     break;
                                 case "TUT":
@@ -139,19 +162,11 @@ public class ScheduleAPIService extends APIService {
                                 default:
                                     session.setSessionType(Session.SessionType.UNKNOWN);
                                     break;
-                                }
                             }
 
-                            if (columns.get(2).text().trim().isEmpty() && lastSession.getIndexId() != null) {
-                                session.setGroup(lastSession.getGroup());
-                            } else {
-                                session.setGroup(columns.get(2).text().trim());
-                            }
+                            session.setGroup(columns.get(2).text().trim());
 
-                            if (columns.get(3).text().trim().isEmpty() && lastSession.getIndexId() != null) {
-                                session.setDay(lastSession.getDay());
-                            } else {
-                                switch (columns.get(3).text().trim()) {
+                            switch (columns.get(3).text().trim()) {
                                 case "MON":
                                     session.setDay(DayOfWeek.MONDAY);
                                     break;
@@ -173,42 +188,29 @@ public class ScheduleAPIService extends APIService {
                                 default:
                                     session.setDay(DayOfWeek.SUNDAY);
                                     break;
-                                }
                             }
 
                             String time = columns.get(4).text().trim();
 
-                            if (time.isEmpty() && lastSession.getIndexId() != null) {
 
-                                session.setStartHour(lastSession.getStartHour());
-                                session.setStartMinute(lastSession.getStartMinute());
-                                session.setEndHour(lastSession.getEndHour());
-                                session.setEndMinute(lastSession.getEndMinute());
+                            String[] timeSplit = time.split("-");
+                            String startHour = timeSplit[0].substring(0, 2);
+                            String startMinute = timeSplit[0].substring(2);
+                            String endHour = timeSplit[1].substring(0, 2);
+                            String endMinute = timeSplit[1].substring(2);
 
-                            } else {
-                                String[] timeSplit = time.split("-");
-                                String startHour = timeSplit[0].substring(0, 2);
-                                String startMinute = timeSplit[0].substring(2);
-                                String endHour = timeSplit[1].substring(0, 2);
-                                String endMinute = timeSplit[1].substring(2);
+                            session.setStartHour(Long.parseLong(startHour));
+                            session.setStartMinute(Long.parseLong(startMinute));
+                            session.setEndHour(Long.parseLong(endHour));
+                            session.setEndMinute(Long.parseLong(endMinute));
 
-                                session.setStartHour(Long.parseLong(startHour));
-                                session.setStartMinute(Long.parseLong(startMinute));
-                                session.setEndHour(Long.parseLong(endHour));
-                                session.setEndMinute(Long.parseLong(endMinute));
-                            }
+                            session.setVenue(columns.get(5).text().trim());
 
-                            if (columns.get(5).text().trim().isEmpty() && lastSession.getIndexId() != null) {
-                                session.setVenue(lastSession.getVenue());
-                            } else {
-                                session.setVenue(columns.get(5).text().trim());
-                            }
+                            String weeksStr = columns.get(6).text().trim();
 
-                            if (columns.get(6).text().trim().isEmpty() && lastSession.getIndexId() != null) {
-                                session.setRemark(lastSession.getRemark());
-                            } else {
-                                session.setRemark(columns.get(6).text().trim());
-                            }
+                            session.setWeeks(parseWeeks(weeksStr));
+
+                            session.setRemark(columns.get(6).text().trim());
 
                             lastSession = session;
                             index.addSession(session);
@@ -231,13 +233,9 @@ public class ScheduleAPIService extends APIService {
     }
 
     /**
-     * @param courses
-     *            The list of courses to save to a JSON file
-     * @param path
-     *            The string path to save the JSON file to
-     *
+     * @param courses The list of courses to save to a JSON file
+     * @param path    The string path to save the JSON file to
      * @return A Mono that completes when the data is saved to the file
-     *
      * @see Mono
      */
     public Mono<Void> saveToJsonFile(List<Module> courses, String path) {
@@ -258,10 +256,11 @@ public class ScheduleAPIService extends APIService {
      * Retrieves the vacancies from the API Warning: This method only works between 9am and 10pm GMT+8 (Singapore)
      *
      * @return A mono that emits a module and its index vacancies
-     *
      */
     public Mono<Module> getVacancies() throws APIException {
-        return null;
+        return Mono.fromSupplier(() -> {
+            return null;
+        });
     }
 
 }

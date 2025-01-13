@@ -9,7 +9,9 @@ public class SessionFactory {
 
     public static Session createSession(Index index) throws FactoryException {
         try {
-            return new Session.SessionBuilder().setIndexId(index.getIndex()).build();
+            Session session = new Session();
+            session.setIndexId(index.getId());
+            return session;
         } catch (Exception e) {
             throw new FactoryException(e);
         }
